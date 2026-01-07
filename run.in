@@ -1,0 +1,133 @@
+variable I world A 
+variable a world 8.00 
+variable l equal 1.0/${a}
+variable Q equal 3.5*${a}
+plugin load chromatin.so
+variable fname index nucl_108.txt
+variable simname index nucl
+variable rand internal 201
+
+# Initialization
+units           real
+atom_style   hybrid ellipsoid angle charge
+
+boundary s s s
+
+log log.temper.${I}.txt
+read_data ${fname}
+
+include params_and_bonds.txt
+
+special_bonds fene
+neighbor 10 bin
+group nucl id 254:348 374:450 471:563 604:700 741:835 861:937 958:1050 1091:1187 1441:1535 1561:1637 1658:1750 1791:1887 1928:2022 2048:2124 2145:2237 2278:2374 2628:2722 2748:2824 2845:2937 2978:3074 3115:3209 3235:3311 3332:3424 3465:3561 3815:3909 3935:4011 4032:4124 4165:4261 4302:4396 4422:4498 4519:4611 4652:4748 5002:5096 5122:5198 5219:5311 5352:5448 5489:5583 5609:5685 5706:5798 5839:5935 6189:6283 6309:6385 6406:6498 6539:6635 6676:6770 6796:6872 6893:6985 7026:7122 7376:7470 7496:7572 7593:7685 7726:7822 7863:7957 7983:8059 8080:8172 8213:8309 8563:8657 8683:8759 8780:8872 8913:9009 9050:9144 9170:9246 9267:9359 9400:9496 9750:9844 9870:9946 9967:10059 10100:10196 10237:10331 10357:10433 10454:10546 10587:10683 10937:11031 11057:11133 11154:11246 11287:11383 11424:11518 11544:11620 11641:11733 11774:11870 12124:12218 12244:12320 12341:12433 12474:12570 12611:12705 12731:12807 12828:12920 12961:13057 13311:13405 13431:13507 13528:13620 13661:13757 13798:13892 13918:13994 14015:14107 14148:14244 39:108 1226:1295 2413:2482 3600:3669 4787:4856 5974:6043 7161:7230 8348:8417 9535:9604 10722:10791 11909:11978 13096:13165
+group dna type 41
+group ps type 42
+group dna_all union dna ps
+group notdna subtract all dna_all
+group tails subtract notdna nucl
+neigh_modify exclude molecule/intra nucl
+neigh_modify exclude molecule/intra dna_all
+neigh_modify exclude type 41 42
+neigh_modify exclude type 41 41
+variable ex equal "sqrt((x[3897] - x[7659])^2 + (y[3897] - y[7659])^2 + (z[3897] - z[7659])^2)"
+group end1 id 3897
+group end2 id 7659
+group P1 id 3898
+group P2 id 3899
+group p3 id 7660
+group p4 id 7661
+thermo_style    custom step temp pe ebond ke spcpu press density
+
+thermo          1000
+
+timer timeout 23:50:00
+
+restart 10000 ${I}.restart.1 ${I}.restart.2
+
+
+
+
+
+comm_style tiled
+fix bl all balance 1000 1.0 rcb
+
+
+compute q dna property/atom quatw quati quatj quatk
+compute shape dna property/atom shapex shapey shapez
+
+
+dump      1 all custom 500000 dna_temper_${I}.dump &
+             id x y z c_q[1] c_q[2] c_q[3] c_q[4] &
+              c_shape[1] c_shape[2] c_shape[3] mol q type
+
+dump_modify 1 sort id
+
+comm_style tiled
+
+compute rg dna gyration
+thermo_style    custom step temp pe ecoul epair ebond ke etotal spcpu timeremain c_rg
+thermo 1000
+
+
+
+
+# first minimise the tails
+
+fix 1 notdna nve
+fix 2 notdna viscous 1000.0
+
+timestep 0.001
+
+run 200000
+
+
+timestep 0.01
+
+run 200000
+
+timestep 0.1
+
+run 2000
+
+timestep 5.0
+
+run 2000
+
+timestep 10.0
+
+run 5000
+
+unfix 1
+unfix 2
+unfix bl
+
+# start rest of system, thermalise at 300K with damping of 1ps
+
+
+fix 2 notdna nve
+fix 3 notdna langevin 0.0 300 1000.0 ${rand}
+fix 5 dna langevin 0.0 300 1000.0 ${rand} angmom 3.0
+fix 2 notdna nve
+fix 4 dna_all rigid/nve/small molecule
+fix bl all balance 1000 1.0 rcb
+
+
+run 10000
+
+#fix           fxnpt notdna press/berendsen z 1.0 1.0 100000.0
+# reduce damping
+
+unfix 3
+unfix 5
+
+timestep 10.0
+fix 3 notdna langevin 300 300 100000.0 ${rand}
+fix 5 dna langevin 300 300 100000.0 ${rand} angmom 3.0
+
+
+run 100000000
+
+#hremd_steve 100000000 10000 $l 3 5 ${rand} ${rand}
+
+
