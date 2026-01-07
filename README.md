@@ -9,7 +9,7 @@ For questions, contact Jan Huertas: jh2366[at]cam.ac.uk
 For compiling the chromatin multiscale model, please follow the instructions in https://github.com/CollepardoLab/CollepardoLab_Chromatin_Model/tree/plugin-dev
 
 ## Usage
-The files needed to run a typical simulation from the paper are in the demo folder. Please download the whole folder, and run using at least 16 cores, for example:
+The files needed to run a typical simulation from the paper are in the demo folder. For the simulations of 108 nucleosome fibers, check the demo_108 folder. Please download the whole folder, and run using at least 16 cores, for example:
 
 mpirun -np 16 ./lmp -in run.in
 
