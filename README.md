@@ -1,7 +1,7 @@
 # Shimazoe_2026
 Source Code for the simulations of the paper 'Linker histone H1 functions as a liquid-like glue to organize chromatin in living human cells'
 
-You can find here our model for chromatin phase separation and analysis scripts with the community. Please use it freely and cite our paper: [link after acceptance]
+You can find here our model for chromatin phase separation and analysis scripts with the community. Please use it freely and cite our paper: [Shimazoe et al. Science Advances 2026]
 
 For questions, contact Jan Huertas: jh2366[at]cam.ac.uk
 
